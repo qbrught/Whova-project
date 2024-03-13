@@ -4,8 +4,34 @@ from db_table import db_table
 def print_session(row):
     print("{} {} {} {} {} {} {}".format(
         row["date"], row["start_time"], row["end_time"], row["session_type"], row["title"], row["room"], row["speakers"]))
+#values with spaces should be entered as hyphen seperated ie. Coral-Lounge
+#there are two options for arguments: single column value pair, and multiple
+def parse_arguments(args):
+    """
+    Parse the command line arguments into a dictionary of column-value pairs.
+    Supports both single column-value pair and multiple pairs separated by commas.
+    """
+    where = {}
+    #try for error handling
+    try :
+        if len(args) == 3:
+            #single column-value pair
+            column = args[1]
+            value = args[2].replace("-", " ")  
+            where[column] = value
+        elif len(args) == 2:
+            #mulitple key value pairs, comma seperated ie. room=Lobby,speaker=Brad-Calder
+            for part in args[1].split(","):
+                column, value = part.split("=")
+                where[column] = value.replace("-", " ")
+        else:
+            raise ValueError("Invalid argument format.")
+    except ValueError as e:
+        print(f"Error parsing given arguments: {e}")
+        sys.exit(1)
+    return where
 
-def lookup_agenda(column, value):
+def lookup_agenda(where):
     #create the table
     agenda_table = db_table("agenda", {
         "id": "INTEGER PRIMARY KEY AUTOINCREMENT",
@@ -18,22 +44,15 @@ def lookup_agenda(column, value):
         "description": "TEXT",
         "speakers": "TEXT"
     })
-    #look up based on column name
-    if column in ["date", "start_time", "end_time", "title", "room", "description"] or column == "location":
-        #location case
-        if column == "location":
-            column = "room"
-        #replace hyphens with space
-        value = value.replace("-", " ")
-        where = {column: value}
-        sessions = agenda_table.select(where=where)
-    elif column == "speaker":
-        #speaker case
-        value = value.replace("-", " ")  #replace hyphens aswell
-        sessions = agenda_table.select(where={"speakers": value})
-    else:
-        print("Invalid column specified")
-        return
+
+    #replace location in case of "location"
+    if "location" in where:
+        where["room"] = where.pop("location")
+    #replace speaker in case of "speaker"
+    if "speaker" in where:
+            where["speakers"] = where.pop("speaker")
+    #session look up
+    sessions = agenda_table.select(where=where)
 
     #print sessions and subsessions
     for session in sessions:
@@ -45,10 +64,9 @@ def lookup_agenda(column, value):
     agenda_table.close()
 
 if __name__ == "__main__":
-    if len(sys.argv) != 3:
-        print("Usage: ./lookup_agenda.py <column> <value>")
+    where = parse_arguments(sys.argv)
+    if not where:
+        print("Usage: ./lookup_agenda.py <column>=<value> or ./lookup_agenda.py <column1>=<value1>,<column2>=<value2>")
         sys.exit(1)
 
-    column = sys.argv[1]
-    value = sys.argv[2].replace("-", " ")
-    lookup_agenda(column, value)
+    lookup_agenda(where)
