@@ -48,7 +48,8 @@ class db_table:
     #
     def create_table(self):
         # { "id": "integer", "name": "text" } -> "id integer, name text"
-        columns_query_string = ', '.join([ "%s %s" % (k,v) for k,v in self.schema.iteritems() ])
+        columns_query_string = ', '.join([ "%s %s" % (k,v) for k,v in self.schema.items() ])
+
 
         # CREATE TABLE IF NOT EXISTS users (id integer PRIMARY KEY, name text)
         #
@@ -81,7 +82,7 @@ class db_table:
         query                = "SELECT %s FROM %s" % (columns_query_string, self.name)
         # build where query string
         if where:
-            where_query_string = [ "%s = '%s'" % (k,v) for k,v in where.iteritems() ]
+            where_query_string = [ "%s = '%s'" % (k,v) for k,v in where.items() ]
             query             += " WHERE " + ' AND '.join(where_query_string)
         
         result = []
@@ -110,21 +111,21 @@ class db_table:
     # Example table.insert({ "id": "42", "name": "John" })
     #
     def insert(self, item):
-        # build columns & values queries
-        columns_query = ", ".join(item.keys())
-        values_query  = ", ".join([ "'%s'" % v for v in item.values()])
-        #print(len(item.values()))
-        #print(item["Speakers"])
-        # INSERT INTO users(id, name) values (42, John)
-        #
-        # Note that columns are formatted into the string without using sqlite safe substitution mechanism
-        # The reason is that sqlite does not provide substitution mechanism for columns parameters
-        # In the context of this project, this is fine (no risk of user malicious input)
+        columns = ", ".join(item.keys())   
+        #SQL place holder
+        placeholders = ", ".join(["?" for _ in item.values()])  
+        #dictionary items
+        values = list(item.values())      
+        #SQL statement with placeholders
+        sql = f"INSERT INTO {self.name} ({columns}) VALUES ({placeholders})"     
+        #execute the command
         cursor = self.db_conn.cursor()
-        cursor.execute("INSERT INTO %s (%s) VALUES (%s)" % (self.name, columns_query, values_query))
-        cursor.close()
+        cursor.execute(sql, values)
         self.db_conn.commit()
-        return cursor.lastrowid
+        
+        last_row_id = cursor.lastrowid  #last ID pointer
+        cursor.close()  
+        return last_row_id  #return ID pointer
 
     #
     # UPDATE wrapper
@@ -138,20 +139,38 @@ class db_table:
     # Example table.update({ "name": "Simon" }, { "id": 42 })
     #
     def update(self, values, where):
-        # build set & where queries
-        set_query   = ", ".join(["%s = '%s'" % (k,v) for k,v in values.iteritems()])
-        where_query = " AND ".join(["%s = '%s'" % (k,v) for k,v in where.iteritems()])
-
-        # UPDATE users SET name = Simon WHERE id = 42
-        #
-        # Note that columns are formatted into the string without using sqlite safe substitution mechanism
-        # The reason is that sqlite does not provide substitution mechanism for columns parameters
-        # In the context of this project, this is fine (no risk of user malicious input)
+        #SET placeholders
+        set_parts = [f"{column} = ?" for column in values]    
+        #WHERE placeholders
+        where_parts = [f"{column} = ?" for column in where]     
+        #SQL statement with placeholders
+        sql = f"UPDATE {self.name} SET {', '.join(set_parts)} WHERE {' AND '.join(where_parts)}"
+        #param pairs
+        parameters = list(values.values()) + list(where.values())       
+        #Same process as insert()
         cursor = self.db_conn.cursor()
-        cursor.execute("UPDATE %s SET %s WHERE %s" % (self.name, set_query, where_query))
-        cursor.close()
+        cursor.execute(sql, parameters)
         self.db_conn.commit()
-        return cursor.rowcount
+        
+        updated_rows = cursor.rowcount  #changed rows
+        cursor.close()
+        
+        return updated_rows
+    def drop_table(self):
+        """Drops the table from the database."""
+        sql = f"DROP TABLE IF EXISTS {self.name}"
+        cursor = self.db_conn.cursor()
+        cursor.execute(sql)
+        self.db_conn.commit()
+        cursor.close()
+    def truncate_table(self):
+        """Deletes all rows in the table but keeps the table structure."""
+        sql = f"DELETE FROM {self.name}"
+        cursor = self.db_conn.cursor()
+        cursor.execute(sql)
+        self.db_conn.commit()
+        cursor.close()
+
 
     #
     # Close the database connection
