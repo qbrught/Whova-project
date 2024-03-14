@@ -3,7 +3,7 @@ from db_table import db_table
 
 def print_session(row):
     print("{} {} {} {} {} {} {}".format(
-        row["date"], row["start_time"], row["end_time"], row["session_type"], row["title"], row["room"], row["speakers"]))
+        row["date"], row["time_start"], row["time_end"], row["session_type"], row["title"], row["room"], row["speakers"]))
     
 def parse_arguments(args):
     """
