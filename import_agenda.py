@@ -7,8 +7,8 @@ df = pd.read_excel('agenda.xls', header=None, skiprows=13, names=['Date', 'Start
 schema = {
     "id": "INTEGER PRIMARY KEY AUTOINCREMENT",
     "date": "TEXT",
-    "start_time": "TEXT",
-    "end_time": "TEXT",
+    "time_start": "TEXT",
+    "time_end": "TEXT",
     "session_type": "TEXT",
     "title": "TEXT",
     "room": "TEXT",
@@ -21,8 +21,8 @@ agenda_table = db_table("agenda", schema)
 for index, row in df.iterrows():
     agenda_table.insert({
         "date": row['Date'],
-        "start_time": row['Start Time'],
-        "end_time": row['End Time'],
+        "time_start": row['Start Time'],
+        "time_end": row['End Time'],
         "session_type": row['Session Type'],
         "title": row['Title'],
         "room": row['Room'],
