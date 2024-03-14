@@ -12,10 +12,9 @@ def parse_arguments(args):
     and the rest of the arguments are concatenated to form the value.
     Allows for multiple column-value pairs where values can include spaces.
     """
-    valid_columns = ["date", "start_time", "end_time", "session_type", "title", "room", "description", "speakers"]
+    valid_columns = ["date", "start_time", "end_time", "session_type", "title", "room", "description", "speakers", "speaker", "location"]
     where = {}
     column = None
-
     try:
         if len(args) < 3:
             raise ValueError("Incorrect arguments. requires at least one column with a value.")
@@ -26,7 +25,14 @@ def parse_arguments(args):
                 if column is not None and column not in where:
                     #raise error if the column value pair DNE
                     raise ValueError(f"Value not provided for column '{column}'.")
-                column = arg
+                #replace location in case of "location"
+                if "location" == arg:
+                    column = "room"
+                #replace speaker in case of "speaker"
+                elif "speaker" == arg:
+                    column = "speakers"
+                else:
+                    column = arg
             elif column:
                 #add value to the current column key
                 if column in where:
@@ -60,13 +66,6 @@ def lookup_agenda(where):
         "description": "TEXT",
         "speakers": "TEXT"
     })
-
-    #replace location in case of "location"
-    if "location" in where:
-        where["room"] = where.pop("location")
-    #replace speaker in case of "speaker"
-    if "speaker" in where:
-            where["speakers"] = where.pop("speaker")
     #session look up
     sessions = agenda_table.select(where=where)
 
