@@ -4,52 +4,47 @@ from db_table import db_table
 def print_session(row):
     print("{} {} {} {} {} {} {}".format(
         row["date"], row["start_time"], row["end_time"], row["session_type"], row["title"], row["room"], row["speakers"]))
-#values with spaces should be entered as hyphen seperated ie. Coral-Lounge
-#there are two options for arguments: single column value pair, and multiple
-# def parse_arguments(args):
-#     """
-#     Parse the command line arguments into a dictionary of column-value pairs.
-#     Supports both single column-value pair and multiple pairs separated by commas.
-#     """
-#     where = {}
-#     #try for error handling
-#     try :
-#         if len(args) == 3:
-#             #single column-value pair
-#             column = args[1]
-#             value = args[2].replace("-", " ")  
-#             where[column] = value
-#         elif len(args) == 2:
-#             #mulitple key value pairs, comma seperated ie. room=Lobby,speaker=Brad-Calder
-#             for part in args[1].split(","):
-#                 column, value = part.split("=")
-#                 where[column] = value.replace("-", " ")
-#         else:
-#             raise ValueError("Invalid argument format.")
-#     except ValueError as e:
-#         print(f"Error parsing given arguments: {e}")
-#         sys.exit(1)
-#     return where
+    
 def parse_arguments(args):
     """
     Parse the command line arguments into a dictionary of column-value pairs.
     The first command line argument after the script name is considered the column,
     and the rest of the arguments are concatenated to form the value.
+    Allows for multiple column-value pairs where values can include spaces.
     """
+    valid_columns = ["date", "start_time", "end_time", "session_type", "title", "room", "description", "speakers"]
     where = {}
-    #try for error handling
+    column = None
+
     try:
         if len(args) < 3:
-            raise ValueError("Insufficient arguments provided.")
-        else:
-            #first arg is column
-            column = args[1]
-            #rest of args are the value
-            value = " ".join(args[2:])
-            where[column] = value
+            raise ValueError("Incorrect arguments. requires at least one column with a value.")
+
+        #check each argument after script name
+        for arg in args[1:]:
+            if arg in valid_columns:
+                if column is not None and column not in where:
+                    #raise error if the column value pair DNE
+                    raise ValueError(f"Value not provided for column '{column}'.")
+                column = arg
+            elif column:
+                #add value to the current column key
+                if column in where:
+                    where[column] += " " + arg
+                else:
+                    where[column] = arg
+            else:
+                #raise error if theres no matching column key
+                raise ValueError(f"Unexpected argument '{arg}' before any column.")
+
+        if column is not None and column not in where:
+            #raise if no matching value for last column key
+            raise ValueError(f"Value not provided for column '{column}'.")
+
     except ValueError as e:
-        print(f"Error parsing given arguments: {e}")
+        print(f"Error: {e}")
         sys.exit(1)
+
     return where
 
 def lookup_agenda(where):
