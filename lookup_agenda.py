@@ -58,8 +58,8 @@ def lookup_agenda(where):
     agenda_table = db_table("agenda", {
         "id": "INTEGER PRIMARY KEY AUTOINCREMENT",
         "date": "TEXT",
-        "start_time": "TEXT",
-        "end_time": "TEXT",
+        "time_start": "TEXT",
+        "time_end": "TEXT",
         "session_type": "TEXT",
         "title": "TEXT",
         "room": "TEXT",
