@@ -12,7 +12,7 @@ def parse_arguments(args):
     and the rest of the arguments are concatenated to form the value.
     Allows for multiple column-value pairs where values can include spaces.
     """
-    valid_columns = ["date", "start_time", "end_time", "session_type", "title", "room", "description", "speakers", "speaker", "location"]
+    valid_columns = ["date", "time_start", "time_end", "session_type", "title", "room", "description", "speakers", "speaker", "location"]
     where = {}
     column = None
     try:
